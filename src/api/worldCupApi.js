@@ -1,54 +1,58 @@
-const API_BASE_URL = 'https://api.worldcup.aimsapi.com';
+import { API_BASE_URL, GIT_USER } from '../constants';
 
-export async function fetchTeams() {
+export const fetchTeams = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/teams`);
-    if (!response.ok) throw new Error('Erro ao buscar times');
-    return await response.json();
+    const response = await fetch(`${API_BASE_URL}/GetAllTeams`, {
+      headers: { 'git-user': GIT_USER }
+    });
+    
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const data = await response.json();
+    console.log('Times recebidos:', data.length);
+    return data;
   } catch (error) {
-    console.error('Erro na API:', error);
-    return [];
+    console.error('Erro ao buscar times:', error);
+    throw error;
   }
-}
+};
 
-export async function fetchGroups() {
+export const transformApiData = (apiData) => {
+  if (!apiData || !Array.isArray(apiData) || apiData.length !== 32) {
+    throw new Error('Dados inválidos da API');
+  }
+
+  const teamTokens = {};
+  apiData.forEach(item => {
+    teamTokens[item.nome] = item.token;
+  });
+
+  return { teamTokens };
+};
+
+export const postFinalResult = async (finalData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/groups`);
-    if (!response.ok) throw new Error('Erro ao buscar grupos');
-    return await response.json();
-  } catch (error) {
-    console.error('Erro na API:', error);
-    return [];
-  }
-}
+    console.log('📤 Enviando resultado:', finalData);
+    
+    const response = await fetch(`${API_BASE_URL}/FinalResult`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'git-user': GIT_USER
+      },
+      body: JSON.stringify(finalData)
+    });
 
-export async function fetchMatches() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/matches`);
-    if (!response.ok) throw new Error('Erro ao buscar partidas');
-    return await response.json();
-  } catch (error) {
-    console.error('Erro na API:', error);
-    return [];
-  }
-}
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
 
-export async function fetchWorldCupData() {
-  try {
-    const [teams, groups, matches] = await Promise.all([
-      fetchTeams(),
-      fetchGroups(),
-      fetchMatches()
-    ]);
-
-    return {
-      teams,
-      groups,
-      matches,
-      timestamp: new Date()
-    };
+    const data = await response.json();
+    console.log('Resultado enviado!');
+    return data;
   } catch (error) {
-    console.error('Erro ao buscar dados da Copa:', error);
-    return null;
+    console.error('Erro ao enviar resultado:', error);
+    throw error;
   }
-}
+};

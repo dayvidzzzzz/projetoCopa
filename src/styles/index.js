@@ -1,0 +1,9 @@
+import './variables.css';
+import './App.css';
+import './components/button.css';
+import './components/loading.css';
+import './components/cards.css';
+import './components/matches.css';
+import './components/table.css';
+import './components/bracket.css';
+import './components/progress.css';
